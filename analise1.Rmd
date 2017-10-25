@@ -1,0 +1,24 @@
+---
+title: "Análise de gastos de deputados"
+author: "Gabriel Morais Lúcio de Araújo"
+date: "25 de outubro de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(reshape2)
+library(readr)
+```
+
+```{r}
+dadosCEAP <- read.csv("/home/gabrielmla/Documentos/dadosCEAP.csv")
+dados.cont.usos <- dadosCEAP %>% group_by(sgPartido) %>% summarise(count = n()) %>% arrange(desc(count)) %>% na.omit()
+
+ggplot(dados.cont.usos, aes(x = sgPartido, y = log(count), color = 'BLUE')) + geom_count() + coord_flip() + labs(y = 'Usos do CEAP')
+```
+
+## 1. Quais os partidos que mais fazem uso da CEAP? Quais os partidos que menos fazem uso? Mesmas perguntas conisderando valores em R$.
