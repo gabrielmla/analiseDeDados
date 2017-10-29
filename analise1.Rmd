@@ -15,10 +15,111 @@ library(readr)
 ```
 
 ```{r}
-dadosCEAP <- read.csv("/home/gabrielmla/Documentos/dadosCEAP.csv")
-dados.cont.usos <- dadosCEAP %>% group_by(sgPartido) %>% summarise(count = n()) %>% arrange(desc(count)) %>% na.omit()
-
-ggplot(dados.cont.usos, aes(x = sgPartido, y = log(count), color = 'BLUE')) + geom_count() + coord_flip() + labs(y = 'Usos do CEAP')
+dadosCEAP <- read.csv("~/GitHub/analiseDeDados/dados/dadosCEAP.csv")
 ```
 
-## 1. Quais os partidos que mais fazem uso da CEAP? Quais os partidos que menos fazem uso? Mesmas perguntas conisderando valores em R$.
+### 1. Quais os partidos que mais fazem uso da CEAP? Quais os partidos que menos fazem uso? Mesmas perguntas conisderando valores em R$.
+
+```{r warning=FALSE}
+dados.cont.usos <- dadosCEAP %>%
+  group_by(sgPartido) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  na.omit()
+
+dados.cont.usos.4 <- dados.cont.usos %>%
+  slice(1:4)
+
+ggplot(dados.cont.usos, aes(x = reorder(sgPartido, count), y = count, fill = count)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels = scales::comma) +
+  coord_flip() +
+  labs('Total de usos do CEAP', x = 'Partidos', y = 'Usos do CEAP')
+
+```
+
+Temos o PT e PMDB como partidos que mais utilizam do CEAP, o PT com 129587 usos e o PMDB com 112875 usos. Já para os partidos que menos utilizam do CEAP temos o PTdoB e o PMN, com 50 e 61 usos, respectivamente.
+
+```{r}
+dados.sum.gastos <- dadosCEAP %>% 
+  group_by(sgPartido) %>% 
+  summarise(Total = sum(valorDocumento)) %>% 
+  arrange(desc(Total)) %>% 
+  na.omit()
+
+total.gasto <- sum(dados.sum.gastos$Total)
+
+ggplot(dados.sum.gastos, aes(x = reorder(sgPartido, Total), y = Total, fill = Total)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels = scales::comma) +
+  scale_fill_continuous(labels = scales::comma) +
+  coord_flip() +
+  labs('Total gasto em R$', x = 'Partidos', y = 'Total (R$)')
+```
+
+Analisando o total utilizado (em R$) do CEAP é observado que agora o PMDB passa a frente do PT nos partidos que mais gastam. O PMDB gastou R$72.977.077,78 e o PT gastou R$69.451.237,72. Já para os partidos que menos gastam a situação se mantem igual a da analise anterior, os PTdoB e PMN são os partidos que menos gastam, com R$15.596,45 e R$88.527,78.
+
+### 2. Quais os tipos de despesa mais comuns no uso da CEAP? Mesma pergunta considerando valores em R$.
+
+```{r}
+dados.cont.despesas <- dadosCEAP %>%
+  group_by(tipoDespesa) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  na.omit()
+
+dados.cont.despesas.4 <- dados.cont.despesas %>% slice(1:4)
+
+ggplot(dados.cont.despesas.4, aes(x = reorder(tipoDespesa, count), y = count, fill = count)) +
+  geom_bar(stat="identity") +
+  scale_y_continuous(labels = scales::comma) +
+  coord_flip() +
+  labs("Despesas mais comuns", x = 'Tipo de despesa', y = 'Usos')
+```
+
+Emissão de bilhetes áereos e Combustivéis e lubrificantes são as despesas mais comuns no uso da CEAP, com 300185 e 196858 usos, respectivamente.
+
+```{r warning=FALSE}
+dados.sum.despesas <- dadosCEAP %>%
+  group_by(tipoDespesa) %>%
+  summarise(total = sum(valorDocumento)) %>%
+  arrange(desc(total)) %>%
+  na.omit()
+
+dados.sum.despesas.4 <- dados.sum.despesas %>% slice(1:4)
+
+ggplot(dados.sum.despesas.4, aes(x = reorder(tipoDespesa, total), y = total)) +
+  geom_bar(aes(fill = dados.sum.despesas.4$total), stat="identity", colour="black") +
+  scale_x_discrete(labels=c("M.E.A.A.P", "L.F.V.A", "E.B.A", "D.A.P")) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_fill_continuous(labels = scales::comma) +
+  labs("Despesas com maior gasto do CEAP", x = 'Tipo de despesa', y = 'Gasto total (em R$)', fill = 'Total')
+```
+
+##### Os nomes das despesas foram abreviados no gráfico para melhor visualização
+Abreviação    | Significado
+------------- | -------------
+D.A.P         | Divulgação da Atividade Parlamentar
+E.B.A         | Emissão de Bilhete Aéreo
+L.F.V.A       | Locação ou Fretamento de Veículos Automotivos
+M.E.A.A.P     | Manutenção de Escritório de Apoio à Atividade Parlamentar
+
+Consigerando o valor gasto em R$ agora temos Divulgação de Atividade Parlamentar (R$141.982.694) como despesa com maior gasto, além disso pode-se notar que a despesa com combustivéis não está entre as 4 despesas que mais gastam, mesmo sendo a segunda despesa com mais usos.
+
+### 3. Levando em conta o estado pelo qual o deputado se elegeu, quais os estados que mais fazem uso da CEAP? Quais os que menos fazem uso? Mesmas perguntas considerando gastos em R$. Por que você acha isso?
+
+```{r}
+
+```
+
+### 4. Quais os parlamentares que mais gastam com CEAP e quais os que menos gastam?
+
+```{r}
+
+```
+
+### 5. Existe correlação entre a quantidade de gastos no exterior e o valor restituído da CEAP? 
+
+```{r}
+
+```
