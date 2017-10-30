@@ -15,7 +15,7 @@ library(readr)
 ```
 
 ```{r}
-dadosCEAP <- read.csv("~/GitHub/analiseDeDados/dados/dadosCEAP.csv")
+dadosCEAP <- read.csv("~/Documentos/analiseDeDados/dados/dadosCEAP.csv")
 ```
 
 ### 1. Quais os partidos que mais fazem uso da CEAP? Quais os partidos que menos fazem uso? Mesmas perguntas conisderando valores em R$.
@@ -109,13 +109,79 @@ Consigerando o valor gasto em R$ agora temos Divulgação de Atividade Parlament
 ### 3. Levando em conta o estado pelo qual o deputado se elegeu, quais os estados que mais fazem uso da CEAP? Quais os que menos fazem uso? Mesmas perguntas considerando gastos em R$. Por que você acha isso?
 
 ```{r}
+dados.cont.estado <- dadosCEAP %>%
+  group_by(sgUF) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  na.omit()
 
+ggplot(dados.cont.estado, aes(x = reorder(sgUF, count), y = count)) +
+  geom_bar(stat = "identity", aes(fill = dados.cont.estado$count)) +
+  scale_y_continuous(labels = scales::comma) +
+  guides(fill = FALSE) +
+  labs("Estados que mais utilizam do CEAP", x = "Estados", y = "Número de usos")
 ```
+
+São Paulo, Minas Gerais e Rio de Janeiro são os estados que mais utilizam do CEAP, com 154289, 120389 e 85180 usos, respectivamente.
+Amazonas, Amapa e Distrito Federal são os estados que menos utilizam do CEAP, com 9138, 8561 e 6179 usos, respectivamente.
+
+```{r}
+dados.sum.estado <- dadosCEAP %>%
+  group_by(sgUF) %>%
+  summarise(total = sum(valorDocumento)) %>%
+  arrange(desc(total)) %>%
+  na.omit()
+
+ggplot(dados.sum.estado, aes(x = reorder(sgUF, total), y = total)) + 
+  geom_bar(stat = "identity", aes(fill = dados.sum.estado$total)) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_fill_continuous(labels = scales::comma) +
+  guides(fill = FALSE) +
+  labs("Estados que mais gastam em R$", x = "Estados", y = "Valor gasto em reais")
+```
+
+Agora analisando o valor gasto em reais podemos ver que os 3 estados que mais utilizam do CEAP são os que mais gastam também, porém os 3 estados que menos gastam não são os mesmos, Mato Grosso tomou o lugar 26° do Amapá (que em número de usos estava nessa posição)
+que subiu para a posição 17 em gasto.
+
+```{r}
+dados.cont.deputado <- dadosCEAP %>%
+  group_by(sgUF) %>%
+  distinct(nomeParlamentar) %>%
+  summarise(nDeputados = n()) %>%
+  na.omit()
+
+ggplot(dados.cont.deputado, aes(x = reorder(sgUF, nDeputados), y = nDeputados)) +
+  geom_bar(stat = "identity", aes(fill = dados.cont.deputado$nDeputados)) +
+  guides(fill = FALSE) +
+  labs("Número de deputados por estado", x = "Estados", y = "Quatidade de deputados")
+```
+
+Fazendo mais uma analise é possível observar que os estados que mais utilizam e gastam da CEAP são também os estados que mais possuem deputados, o mesmo não pode ser dito para os estados que menos gastam/utilizam, mas é válido dizer que muitos dos estados que menos gastam estão entre os estados com menor número de deputados.
 
 ### 4. Quais os parlamentares que mais gastam com CEAP e quais os que menos gastam?
 
 ```{r}
+dados.sum.gastoDeputado <- dadosCEAP %>%
+  group_by(nomeParlamentar) %>%
+  summarise(total = sum(valorDocumento)) %>%
+  arrange(desc(total)) %>%
+  na.omit()
 
+dados.sum.maisGasto <- dados.sum.gastoDeputado %>%
+  top_n(10)
+
+dados.sum.menosGasto <- dados.sum.gastoDeputado %>%
+  top_n(-14) %>% top_n(10)
+
+ggplot(dados.sum.maisGasto, aes(x = reorder(nomeParlamentar, total), y = total, fill = "blue")) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs("Parlamentares que mais gastam do CEAP", x = "Parlamentar", y = "Valor total gasto")
+
+ggplot(dados.sum.menosGasto, aes(x = reorder(nomeParlamentar, -total), y = total)) +
+  geom_bar(stat = "identity", aes(fill = "green")) +
+  coord_flip() +
+  labs("Parlamentares que menos gastam do CEAP", x = "Parlamentar", y = "Valor total gasto")
 ```
 
 ### 5. Existe correlação entre a quantidade de gastos no exterior e o valor restituído da CEAP? 
