@@ -10,17 +10,17 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(ggplot2)
 library(scales)
-library(reshape2)
+library(gridExtra)
 library(readr)
 ```
 
 ```{r}
-dadosCEAP <- read.csv("~/Documentos/analiseDeDados/dados/dadosCEAP.csv")
+dadosCEAP <- read.csv("~/Github/analiseDeDados/dados/dadosCEAP.csv")
 ```
 
 ### 1. Quais os partidos que mais fazem uso da CEAP? Quais os partidos que menos fazem uso? Mesmas perguntas conisderando valores em R$.
 
-```{r warning=FALSE}
+```{r warning=FALSE, message=FALSE}
 dados.cont.usos <- dadosCEAP %>%
   group_by(sgPartido) %>%
   summarise(count = n()) %>%
@@ -40,7 +40,7 @@ ggplot(dados.cont.usos, aes(x = reorder(sgPartido, count), y = count, fill = cou
 
 Temos o PT e PMDB como partidos que mais utilizam do CEAP, o PT com 129587 usos e o PMDB com 112875 usos. Já para os partidos que menos utilizam do CEAP temos o PTdoB e o PMN, com 50 e 61 usos, respectivamente.
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 dados.sum.gastos <- dadosCEAP %>% 
   group_by(sgPartido) %>% 
   summarise(Total = sum(valorDocumento)) %>% 
@@ -61,7 +61,7 @@ Analisando o total utilizado (em R$) do CEAP é observado que agora o PMDB passa
 
 ### 2. Quais os tipos de despesa mais comuns no uso da CEAP? Mesma pergunta considerando valores em R$.
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 dados.cont.despesas <- dadosCEAP %>%
   group_by(tipoDespesa) %>%
   summarise(count = n()) %>%
@@ -79,7 +79,7 @@ ggplot(dados.cont.despesas.4, aes(x = reorder(tipoDespesa, count), y = count, fi
 
 Emissão de bilhetes áereos e Combustivéis e lubrificantes são as despesas mais comuns no uso da CEAP, com 300185 e 196858 usos, respectivamente.
 
-```{r warning=FALSE}
+```{r warning=FALSE, message=FALSE}
 dados.sum.despesas <- dadosCEAP %>%
   group_by(tipoDespesa) %>%
   summarise(total = sum(valorDocumento)) %>%
@@ -108,7 +108,7 @@ Consigerando o valor gasto em R$ agora temos Divulgação de Atividade Parlament
 
 ### 3. Levando em conta o estado pelo qual o deputado se elegeu, quais os estados que mais fazem uso da CEAP? Quais os que menos fazem uso? Mesmas perguntas considerando gastos em R$. Por que você acha isso?
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 dados.cont.estado <- dadosCEAP %>%
   group_by(sgUF) %>%
   summarise(count = n()) %>%
@@ -125,7 +125,7 @@ ggplot(dados.cont.estado, aes(x = reorder(sgUF, count), y = count)) +
 São Paulo, Minas Gerais e Rio de Janeiro são os estados que mais utilizam do CEAP, com 154289, 120389 e 85180 usos, respectivamente.
 Amazonas, Amapa e Distrito Federal são os estados que menos utilizam do CEAP, com 9138, 8561 e 6179 usos, respectivamente.
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 dados.sum.estado <- dadosCEAP %>%
   group_by(sgUF) %>%
   summarise(total = sum(valorDocumento)) %>%
@@ -143,7 +143,7 @@ ggplot(dados.sum.estado, aes(x = reorder(sgUF, total), y = total)) +
 Agora analisando o valor gasto em reais podemos ver que os 3 estados que mais utilizam do CEAP são os que mais gastam também, porém os 3 estados que menos gastam não são os mesmos, Mato Grosso tomou o lugar 26° do Amapá (que em número de usos estava nessa posição)
 que subiu para a posição 17 em gasto.
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 dados.cont.deputado <- dadosCEAP %>%
   group_by(sgUF) %>%
   distinct(nomeParlamentar) %>%
@@ -160,7 +160,7 @@ Fazendo mais uma analise é possível observar que os estados que mais utilizam 
 
 ### 4. Quais os parlamentares que mais gastam com CEAP e quais os que menos gastam?
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 dados.sum.gastoDeputado <- dadosCEAP %>%
   group_by(nomeParlamentar) %>%
   summarise(total = sum(valorDocumento)) %>%
@@ -173,19 +173,29 @@ dados.sum.maisGasto <- dados.sum.gastoDeputado %>%
 dados.sum.menosGasto <- dados.sum.gastoDeputado %>%
   top_n(-14) %>% top_n(10)
 
-ggplot(dados.sum.maisGasto, aes(x = reorder(nomeParlamentar, total), y = total, fill = "blue")) +
+maisGasta <- ggplot(dados.sum.maisGasto, aes(x = reorder(nomeParlamentar, total), y = total)) +
   geom_bar(stat = "identity") +
-  coord_flip() +
-  labs("Parlamentares que mais gastam do CEAP", x = "Parlamentar", y = "Valor total gasto")
+  theme(axis.text.x=element_text(angle=45,hjust=1)) +
+  labs("Parlamentares que mais gastam do CEAP", x = "Parlamentares (Maior gasto)", y = "Valor total gasto")
 
-ggplot(dados.sum.menosGasto, aes(x = reorder(nomeParlamentar, -total), y = total)) +
-  geom_bar(stat = "identity", aes(fill = "green")) +
-  coord_flip() +
-  labs("Parlamentares que menos gastam do CEAP", x = "Parlamentar", y = "Valor total gasto")
+menosGasta <- ggplot(dados.sum.menosGasto, aes(x = reorder(nomeParlamentar, total), y = total)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x=element_text(angle=45,hjust=1)) +
+  labs("Parlamentares que menos gastam do CEAP", x = "Parlamentares (Menor gasto)", y = "Valor total gasto")
+
+grid.arrange(maisGasta, menosGasta, ncol=2)
 ```
+
+Temos Francisco Chapadinha, Macedo e Silas Cãmara como parlamentares que mais gastam, com R$1.948.413, R$1.647.264 e R$1.529.103 gastos, respectivamente. Já os parlamentares que menos gastam são Camilo Cola, Marcio Monteiro e Marcel Almeida, com R$0.62, R$14.18 e R$26.16 gastos, respectivamente.
 
 ### 5. Existe correlação entre a quantidade de gastos no exterior e o valor restituído da CEAP? 
 
-```{r}
+```{r warning=FALSE, message=FALSE}
+dados.exterior <- dadosCEAP %>%
+  group_by(valorDocumento) %>%
+  filter(tipoDocumento == 2)
+
+ggplot(dados.exterior, aes(x = valorDocumento, y = valorLiquido)) +
+  geom_point()
 
 ```
