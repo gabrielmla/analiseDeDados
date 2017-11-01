@@ -9,13 +9,14 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(ggplot2)
+library(data.table)
 library(scales)
 library(gridExtra)
 library(readr)
 ```
 
 ```{r}
-dadosCEAP <- read.csv("~/Github/analiseDeDados/dados/dadosCEAP.csv")
+dadosCEAP <- read.csv("~/Documentos/Github/analiseDeDados/dados/dadosCEAP.csv")
 ```
 
 ### 1. Quais os partidos que mais fazem uso da CEAP? Quais os partidos que menos fazem uso? Mesmas perguntas conisderando valores em R$.
@@ -190,6 +191,7 @@ Temos Francisco Chapadinha, Macedo e Silas Cãmara como parlamentares que mais g
 
 ### 5. Existe correlação entre a quantidade de gastos no exterior e o valor restituído da CEAP? 
 
+<<<<<<< HEAD
 ```{r warning=FALSE, message=FALSE}
 dados.exterior <- dadosCEAP %>%
   group_by(valorDocumento) %>%
@@ -197,5 +199,48 @@ dados.exterior <- dadosCEAP %>%
 
 ggplot(dados.exterior, aes(x = valorDocumento, y = valorLiquido)) +
   geom_point()
-
 ```
+
+## Bonus
+### 1. Quais os estados cujos deputados gastam mais no exterior? Quais os estados cujos deputados gastam menos?
+
+```{r warning=FALSE, message=FALSE}
+dados.exterior.gastoEst <- dados.exterior %>%
+  group_by(sgUF) %>%
+  summarise(total = sum(valorDocumento)) %>%
+  arrange(desc(total)) %>%
+  na.omit()
+
+ggplot(dados.exterior.gastoEst, aes(x = reorder(sgUF, total), y = total)) + 
+  geom_bar(stat = "identity", aes(fill = dados.exterior.gastoEst$total)) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_fill_continuous(labels = scales::comma) +
+  guides(fill = FALSE) +
+  labs("Estados que mais gastam em R$", x = "Estados", y = "Valor gasto em reais")
+```
+
+São Paulo, Minas Gerais e Pernambuco são os estados onde os deputados mais gastam no exterior, com R$103.046,78 ,R$79.978,96 e R$70.915,94 gastos, respectivamente. Os estados onde os deputados menos gastam são Sergipe, Pará e Maranhão, com R$6.839,79, R$5.628,88 e R$40,99 gastos, respectivamente.
+
+### 2.Quais os deputados que mais ultrapassam o limite de CEAP do seu estado?
+
+```{r warning=FALSE, message=FALSE}
+dadosLimiteCEAP <- read.csv("~/Documentos/Github/analiseDeDados/dados/limiteMensalCEAP.csv")
+
+colnames(dadosLimiteCEAP)[1] <- "sgUF"
+colnames(dadosLimiteCEAP)[2] <- "total"
+
+dados.sum.gastoDeputadoEst <- dadosCEAP %>%
+  group_by(nomeParlamentar, sgUF) %>%
+  summarise(total = sum(valorDocumento)) %>%
+  arrange(desc(total)) %>%
+  na.omit()
+
+DT <- as.data.table(dados.sum.gastoDeputadoEst)
+dados.topGastosEst <- DT[,.SD[which.max(total)],by=sgUF]
+
+limites.plus.topgasto <- rbind(dadosLimiteCEAP, dados.topGastosEst, fill = TRUE)
+
+ggplot(limites.plus.topgasto, aes(x = sgUF, y = total)) +
+  geom_bar(stat = "identity")
+```
+
