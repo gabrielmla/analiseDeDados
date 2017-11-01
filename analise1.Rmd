@@ -13,6 +13,7 @@ library(data.table)
 library(scales)
 library(gridExtra)
 library(readr)
+library(plotly)
 ```
 
 ```{r}
@@ -191,15 +192,18 @@ Temos Francisco Chapadinha, Macedo e Silas Cãmara como parlamentares que mais g
 
 ### 5. Existe correlação entre a quantidade de gastos no exterior e o valor restituído da CEAP? 
 
-<<<<<<< HEAD
 ```{r warning=FALSE, message=FALSE}
 dados.exterior <- dadosCEAP %>%
-  group_by(valorDocumento) %>%
-  filter(tipoDocumento == 2)
+  filter(tipoDocumento == 2) %>%
+  group_by(nomeParlamentar) %>%
+  summarise(count = n(), sumValorLiquido = sum(valorLíquido))
 
-ggplot(dados.exterior, aes(x = valorDocumento, y = valorLiquido)) +
-  geom_point()
+ggplot(dados.exterior, aes(x = count, y = sumValorLiquido)) +
+  geom_point() +
+  geom_smooth(method=lm) +
+  coord_flip()
 ```
+
 
 ## Bonus
 ### 1. Quais os estados cujos deputados gastam mais no exterior? Quais os estados cujos deputados gastam menos?
@@ -238,9 +242,12 @@ dados.sum.gastoDeputadoEst <- dadosCEAP %>%
 DT <- as.data.table(dados.sum.gastoDeputadoEst)
 dados.topGastosEst <- DT[,.SD[which.max(total)],by=sgUF]
 
-limites.plus.topgasto <- rbind(dadosLimiteCEAP, dados.topGastosEst, fill = TRUE)
+g.exceed <- ggplot(dados.topGastosEst, aes(x = reorder(nomeParlamentar, total - dadosLimiteCEAP$total), y = total - dadosLimiteCEAP$total, fill = sgUF)) +
+  geom_bar(stat = "identity") +
+  theme(axis.text.x=element_text(angle=45,hjust=1)) +
+  labs("Valor execido dos deputados que mais gastam", x = "Parlamentares", y = "Valor excedido")
 
-ggplot(limites.plus.topgasto, aes(x = sgUF, y = total)) +
-  geom_bar(stat = "identity")
+ggplotly(g.exceed)
 ```
 
+No gráfico acima podemos ver os parlamentares que mais excederam o limite do seu respectivo estado. É observado que Francisco Chapadinha do Pará excedeu o limite do CEAP do estado em R$1.903.780, seguido por Macedo do Ceará que excedeu o limite do estado em R$1.606.320 e Silas Câmara do Amazonas que excedeu o limite do seu estado em R$1.485.533, são os parlamentares que mais excederam o limite do CEAP.
