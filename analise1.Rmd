@@ -17,7 +17,7 @@ library(plotly)
 ```
 
 ```{r}
-dadosCEAP <- read.csv("~/Documentos/Github/analiseDeDados/dados/dadosCEAP.csv")
+dadosCEAP <- read.csv("~/Github/analiseDeDados/dados/dadosCEAP.csv")
 ```
 
 ### 1. Quais os partidos que mais fazem uso da CEAP? Quais os partidos que menos fazem uso? Mesmas perguntas conisderando valores em R$.
@@ -175,14 +175,16 @@ dados.sum.maisGasto <- dados.sum.gastoDeputado %>%
 dados.sum.menosGasto <- dados.sum.gastoDeputado %>%
   top_n(-14) %>% top_n(10)
 
-maisGasta <- ggplot(dados.sum.maisGasto, aes(x = reorder(nomeParlamentar, total), y = total)) +
+maisGasta <- ggplot(dados.sum.maisGasto, aes(x = reorder(nomeParlamentar, total), y = total, fill = total)) +
   geom_bar(stat = "identity") +
   theme(axis.text.x=element_text(angle=45,hjust=1)) +
+  guides(fill = FALSE) +
   labs("Parlamentares que mais gastam do CEAP", x = "Parlamentares (Maior gasto)", y = "Valor total gasto")
 
-menosGasta <- ggplot(dados.sum.menosGasto, aes(x = reorder(nomeParlamentar, total), y = total)) +
+menosGasta <- ggplot(dados.sum.menosGasto, aes(x = reorder(nomeParlamentar, total), y = total, fill = total)) +
   geom_bar(stat = "identity") +
   theme(axis.text.x=element_text(angle=45,hjust=1)) +
+  guides(fill = FALSE) +
   labs("Parlamentares que menos gastam do CEAP", x = "Parlamentares (Menor gasto)", y = "Valor total gasto")
 
 grid.arrange(maisGasta, menosGasta, ncol=2)
@@ -196,21 +198,26 @@ Temos Francisco Chapadinha, Macedo e Silas Cãmara como parlamentares que mais g
 dados.exterior <- dadosCEAP %>%
   filter(tipoDocumento == 2) %>%
   group_by(nomeParlamentar) %>%
-  summarise(count = n(), sumValorLiquido = sum(valorLíquido))
+  summarise(count = n(), sumValorLiquido = sum(valorLÃ.quido))
 
-ggplot(dados.exterior, aes(x = count, y = sumValorLiquido)) +
+g.liquid <- ggplot(dados.exterior, aes(x = count, y = sumValorLiquido)) +
   geom_point() +
   geom_smooth(method=lm) +
-  coord_flip()
+  xlim(0,30) +
+  labs("Correlação entre quantidade de gastos no exterior e valor restituido.", x = "Quantidade de usos", y = "Valor restituido")
+
+ggplotly(g.liquid)
 ```
 
+Sim, existe uma correlação entre o número de usos da CEAP e o valor restituido. Porém essa correlação possui uma variação alta em alguns pontos. Por exemplo, temos o parlamentar Odorico Monteiro com 9 usos da CEAP, mas com maior valor restituido (R$52.164,36).
 
 ## Bonus
 ### 1. Quais os estados cujos deputados gastam mais no exterior? Quais os estados cujos deputados gastam menos?
 
 ```{r warning=FALSE, message=FALSE}
-dados.exterior.gastoEst <- dados.exterior %>%
+dados.exterior.gastoEst <- dadosCEAP %>%
   group_by(sgUF) %>%
+  filter(tipoDocumento == 2) %>%
   summarise(total = sum(valorDocumento)) %>%
   arrange(desc(total)) %>%
   na.omit()
@@ -228,7 +235,7 @@ São Paulo, Minas Gerais e Pernambuco são os estados onde os deputados mais gas
 ### 2.Quais os deputados que mais ultrapassam o limite de CEAP do seu estado?
 
 ```{r warning=FALSE, message=FALSE}
-dadosLimiteCEAP <- read.csv("~/Documentos/Github/analiseDeDados/dados/limiteMensalCEAP.csv")
+dadosLimiteCEAP <- read.csv("~/Github/analiseDeDados/dados/limiteMensalCEAP.csv")
 
 colnames(dadosLimiteCEAP)[1] <- "sgUF"
 colnames(dadosLimiteCEAP)[2] <- "total"
