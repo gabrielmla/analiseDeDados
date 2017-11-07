@@ -1,0 +1,29 @@
+---
+title: 'Análise de Gastos de Deputados: Suas Perguntas'
+author: "Gabriel Moras Lúcio de Araújo"
+date: "7 de novembro de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(scales)
+library(reshape2)
+library(readr)
+library(plotly)
+```
+
+```{r}
+dadosCEAP <- read.csv("~/Documentos/Github/analiseDeDados/dados/dadosCEAP.csv")
+dadosLimiteCEAP <- read.csv("~/Documentos/Github/analiseDeDados/dados/limiteMensalCEAP.csv")
+```
+
+
+### 1. Quais são os fornecedores com mais usos da CEAP? E levando em conta o valor gasto em R$?
+##### **Expectativa:** *Acredito que os fornecedores com mais usos da CEAP serão os que provem as despesas com mais usos da CEAP.*
+### 2. Existe correlação entre o número de deputados de um estado e o limite mensal da CEAP?
+##### **Expectativa:** *Os estados com maior número de deputados devem ter limite mensal maior para que o gasto total não seja muito alto.*
+### 3. 
