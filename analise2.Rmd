@@ -12,18 +12,111 @@ library(ggplot2)
 library(data.table)
 library(scales)
 library(reshape2)
+library(gridExtra)
 library(readr)
 library(plotly)
 ```
 
 ```{r}
-dadosCEAP <- read.csv("~/Documentos/Github/analiseDeDados/dados/dadosCEAP.csv")
-dadosLimiteCEAP <- read.csv("~/Documentos/Github/analiseDeDados/dados/limiteMensalCEAP.csv")
+dadosCEAP <- read.csv("~/Github/analiseDeDados/dados/dadosCEAP.csv", encoding = "UTF-8")
+dadosLimiteCEAP <- read.csv("~/Github/analiseDeDados/dados/limiteMensalCEAP.csv", encoding = "UTF-8")
 ```
 
-
 ### 1. Quais são os fornecedores com mais usos da CEAP? E levando em conta o valor gasto em R$?
-##### **Expectativa:** *Acredito que os fornecedores com mais usos da CEAP serão os que provem as despesas com mais usos da CEAP.*
+**Expectativa:** *Acredito que os fornecedores com mais usos da CEAP serão os que provem as despesas com mais usos da CEAP.*
+Vejamos o que as seguintes visualizações podem nos dizer:
+
+```{r warning=FALSE, message=FALSE}
+dados.cont.fornecedor <- dadosCEAP %>%
+  group_by(fornecedor) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) %>%
+  na.omit()
+
+fornecedor.top10 <- dados.cont.fornecedor %>% top_n(10)
+
+dados.sum.fornecedor <- dadosCEAP %>%
+  group_by(fornecedor) %>%
+  summarise(total = sum(valorDocumento)) %>%
+  arrange(desc(total)) %>%
+  na.omit()
+
+fornecedor.gastotop10 <- dados.sum.fornecedor %>% top_n(10)
+
+ggplot(fornecedor.top10, aes(x = reorder(fornecedor, count), y = count, fill = count)) +
+  geom_bar(stat = "identity") +
+  guides(fill = FALSE) +
+  scale_y_continuous(labels = scales::comma) +
+  coord_flip() +
+  labs("Fornecedaores com mais usos da CEAP", x = "Fornecedor", y = "Quantidade de usos")
+
+```
+
+Agora analisando os gastos em R$:
+
+```{r warning=FALSE, message=FALSE}
+ggplot(fornecedor.gastotop10, aes(x = reorder(fornecedor, total), y = total, fill = total)) +
+  geom_bar(stat = "identity") +
+  guides(fill = FALSE) +
+  scale_y_continuous(labels = scales::comma) +
+  coord_flip() +
+  labs("Fornecedaores com mais gastos da CEAP", x = "Fornecedor", y = "Gasto total")
+```
+
+Como podemos ver, em ambos os casos (uso e gasto total) as despesas envolvendo bilhetes aéreo são as que mais gastam e são utilizadas pelos parlamentares.
+
 ### 2. Existe correlação entre o número de deputados de um estado e o limite mensal da CEAP?
-##### **Expectativa:** *Os estados com maior número de deputados devem ter limite mensal maior para que o gasto total não seja muito alto.*
-### 3. 
+**Expectativa:** *Os estados com maior número de deputados devem ter limite mensal menor para que o gasto total não seja muito alto.*
+
+```{r warning=FALSE, message=FALSE}
+dados.cont.deputado <- dadosCEAP %>%
+  group_by(sgUF) %>%
+  distinct(nomeParlamentar) %>%
+  summarise(nDeputados = n()) %>%
+  na.omit()
+
+colnames(dadosLimiteCEAP)[1] <- "sgUF"
+
+co.deputado.limite <- inner_join(dados.cont.deputado, dadosLimiteCEAP)
+
+plot.co.deputado.limite <- ggplot(co.deputado.limite, aes(x = nDeputados, y = limite_mensal)) +
+  geom_point(aes(fill = co.deputado.limite$sgUF)) +
+  geom_smooth(method=lm) +
+  xlim(10, 90) +
+  labs("Correlação entre número de parlamentares e limite mensal do estado", x = "Número de parlamentares", y = "Limite mensal", fill = "Estados")
+
+ggplotly(plot.co.deputado.limite)
+```
+
+Como eu esperava, quanto maior o número de parlamentares de ume estado, menor o limite mensal a ser gasto da CEAP.
+
+### 3. Existe correlação entre o gasto dos deputados e o seu investimento em divulgação de atividade parlamentar?
+**Expectativa:** *Os gastos em divulgação costumam ser pesados, acredito que existe uma alta correlação com o gasto total do deputado.*
+
+```{r warning=FALSE, message=FALSE}
+dados.sum.gastoDeputado <- dadosCEAP %>%
+  group_by(nomeParlamentar) %>%
+  summarise(Gasto.Total = sum(valorDocumento)) %>%
+  arrange(desc(Gasto.Total)) %>%
+  na.omit()
+
+dados.divulgacao <- dadosCEAP %>%
+  filter(tipoDespesa == "DIVULGAÇÃO DA ATIVIDADE PARLAMENTAR.") %>%
+  group_by(nomeParlamentar) %>%
+  summarise(Gasto.Divulgacao = sum(valorDocumento))
+
+co.divulgacao.gasto <- inner_join(dados.sum.gastoDeputado, dados.divulgacao)
+co.divulgacao.gasto[3] <- floor(co.divulgacao.gasto[3])
+co.divulgacao.gasto <- co.divulgacao.gasto %>% top_n(100)
+
+plot.divulga.gasto <- ggplot(co.divulgacao.gasto, aes(x = Gasto.Divulgacao, y = Gasto.Total)) +
+  geom_point() +
+  geom_smooth(method=lm) +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(labels = scales::comma) +
+  labs("Correlação entre gasto total e gasto em divulgação dos parlamentares", y = "Gasto total", x = "Gasto em divulgação")
+
+ggplotly(plot.divulga.gasto)
+```
+
+Existe realmente uma correlação entre o gasto total e o gasto em divulgação, em muitos paralamentares o gasto em divulgação alcança por volta de 50% do gasto total da CEAP que o parlamentar fez.
