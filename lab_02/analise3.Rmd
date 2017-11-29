@@ -1,0 +1,113 @@
+---
+title: "Usando Regressão Linear para Explicar a votação de Deputados"
+author: "Gabriel Morais Lúcio de Araújo"
+date: "22 de novembro de 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(scales)
+library(gridExtra)
+library(readr)
+library(plotly)
+library(Amelia)
+library(corrgram)
+library(corrplot)
+```
+
+```{r}
+eleicoes2014 <- read.csv("~/Github/analiseDeDados/dados/eleicoes2014.csv", encoding = "latin1")
+```
+
+### 1. Um modelo de regressão múltipla com todas as variáveis é plausível para explicar a variação em y (número de votos)? Justifique sua resposta.
+
+Antes de gerar um modelo de regressão para explicar o número de votos, vamos observador os dados disponibilizados. Logo de cara é possível notar que existem colunas com grande número de dados ausentes. Por causa disso, vou preencher os valores ausentes com o valor médio das colunas. As variáveis que terão valores preenchidos são: recursos_de_outros_candidatos.comites, recursos_de_partidos, recursos_de_pessoas_físicas, recursos_de_pessoas_juridicas e recursos_proprios.
+
+```{r}
+# Coluna recursos_de_outros_candidatos.comites
+eleicoes2014$recursos_de_outros_candidatos.comites[is.na(eleicoes2014$recursos_de_outros_candidatos.comites)] <- median(eleicoes2014$recursos_de_outros_candidatos.comites, na.rm = TRUE)
+# Coluna recursos_de_partidos
+eleicoes2014$recursos_de_partidos[is.na(eleicoes2014$recursos_de_partidos)] <- median(eleicoes2014$recursos_de_partidos, na.rm = TRUE)
+# Coluna recursos_de_pessoas_físicas
+eleicoes2014$recursos_de_pessoas_físicas[is.na(eleicoes2014$recursos_de_pessoas_físicas)] <- median(eleicoes2014$recursos_de_pessoas_físicas, na.rm = TRUE)
+# Coluna recursos_de_pessoas_juridicas
+eleicoes2014$recursos_de_pessoas_juridicas[is.na(eleicoes2014$recursos_de_pessoas_juridicas)] <- median(eleicoes2014$recursos_de_pessoas_juridicas, na.rm = TRUE)
+# Coluna recursos_proprios
+eleicoes2014$recursos_proprios[is.na(eleicoes2014$recursos_proprios)] <- median(eleicoes2014$recursos_proprios, na.rm = TRUE)
+```
+
+Agora que essas variáveis foram preenchidas partirei para a questão a ser respondida.
+
+```{r}
+eleicoes2014.semCategoricas1 <- eleicoes2014 %>%
+  select(-cargo, -nome, -sequencial_candidato, -numero_cadidato, -setor_economico_receita, -setor_economico_despesa)
+```
+
+O modelo linear com todas as variáveis não é plausível para explicar o comportamento da variável votos. Existem muitas variáveis categoricas, assim o modelo fica longo e de dificil visualização. Por esse motivo eu retirei as seguintes variáveis: cargo, nome, sequencial_candidato, numero_candidato, setor_economico_receita e setor_economico_despesa. Após isso obtive a seguinte sumarização de meu modelo:
+
+```{r}
+lm(data = eleicoes2014.semCategoricas1, votos ~ .) %>% summary()
+```
+
+Mesmo retirando algumas variáveis categoricas, ainda existem muitas. Além disso, existem muitas onde o valor-p é maior que 0,05, ou seja, a probabilidade da causalidade entra ela e o número de votos seja aleatória é alta. Então, irei retirar mais variáveis, são elas: estado_civil, grau, idade e quantidade_doacoes. Ficamos então com:
+
+```{r}
+eleicoes2014.semCategoricas2 <- eleicoes2014.semCategoricas1 %>%
+  select(-estado_civil, -grau, -idade, -quantidade_doacoes)
+
+lm(data = eleicoes2014.semCategoricas2, votos ~ .) %>% summary()
+```
+
+
+### 2. Todas as variáveis são úteis para o modelo de regressão? Há variáveis redudantes? Justifique sua resposta em ambos os casos.
+
+Para descobrir variáveis redundantes irei utilizar de correlação entre elas.
+
+```{r}
+eleicoes2014.filtrado.numeric <- eleicoes2014.semCategoricas2
+eleicoes2014.filtrado.numeric$UF <- as.numeric(eleicoes2014.filtrado.numeric$UF)
+eleicoes2014.filtrado.numeric$sexo  <- as.numeric(eleicoes2014.filtrado.numeric$sexo )
+eleicoes2014.filtrado.numeric$partido <- as.numeric(eleicoes2014.filtrado.numeric$partido)
+corr = cor(eleicoes2014.filtrado.numeric[, 1:14])
+round(corr, 2)
+```
+
+```{r}
+corrplot(corr)
+```
+
+As variáveis total_receita e total_despesa possuem correlação muito forte. Por isso irei remover a variável total_receita e assim melhorar a capacidade de predição do número de votos do modelo.
+
+```{r}
+eleicoes2014.semCategoricas3 <- eleicoes2014.semCategoricas2 %>%
+  select(-total_receita)
+```
+
+### 3. No caso de haver variáveis pouco explicativas e/ou redudantes, construa um novo modelo sem essas variáveis e o compare ao modelo com todas as variáveis (e.g. em termos de R2 e RSE).
+
+```{r}
+modelo <- lm(data = eleicoes2014.semCategoricas3, votos ~ .)
+summary(modelo)
+```
+
+No modelo feito na 1 pergunta obtive RSE = 32230 e R² = 0,5034. No novo modelo, retirando a variável considerada redundante obtive RSE = 32550 e R² = 0,4918. A variação desses valores foi baixa entre os modelos.
+
+### 4. Analise plots de resíduos e verifique se há tendências nos erros. 
+
+```{r}
+ggplot(modelo, aes(x = predict(modelo), y = residuals(modelo))) +
+  geom_point() +
+  scale_y_continuous(labels = scales::comma) +
+  scale_x_continuous(labels = scales::comma) +
+  labs("Analíse de resíduos", x = "Predição", y = "Resíduos")
+```
+
+Os dados estão, de certa forma, concentrados e não são aleátorios. Isso indica que o modelo ainda precisa de aprimoramentos.
+
+### 5. Quais variáveis conseguem explicar melhor o número de votos? Justifique sua resposta.
+
+As variáveis com menor p-valor são fortes concorrentes, pois o p-valor indica quão aleátoria é a correlação entre uma variável e a variável resposta. Com isso quantidade_despesas, quantidade_fornecedores, quantidade_doadores, media_receita e recursos_de_outros_candidatos.comites são variáveis que, provavelmente, consegur melhor explicar o número de votos.
