@@ -88,6 +88,11 @@ plot.co.deputado.limite <- ggplot(co.deputado.limite, aes(x = nDeputados, y = li
 ggplotly(plot.co.deputado.limite)
 ```
 
+```{r}
+cor(co.deputado.limite$nDeputados, co.deputado.limite$limite_mensal)
+```
+
+
 Como eu esperava, quanto maior o número de parlamentares de ume estado, menor o limite mensal a ser gasto da CEAP.
 
 ### 3. Existe correlação entre o gasto dos deputados e o seu investimento em divulgação de atividade parlamentar?
@@ -118,5 +123,10 @@ plot.divulga.gasto <- ggplot(co.divulgacao.gasto, aes(x = Gasto.Divulgacao, y = 
 
 ggplotly(plot.divulga.gasto)
 ```
+
+```{r}
+cor(co.divulgacao.gasto$Gasto.Divulgacao, co.divulgacao.gasto$Gasto.Total)
+```
+
 
 Existe realmente uma correlação entre o gasto total e o gasto em divulgação, em muitos paralamentares o gasto em divulgação alcança por volta de 50% do gasto total da CEAP que o parlamentar fez.
