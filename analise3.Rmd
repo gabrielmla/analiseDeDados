@@ -14,29 +14,51 @@ library(scales)
 library(gridExtra)
 library(readr)
 library(plotly)
+library(Amelia)
 ```
 
 ### Exemplos: https://rpubs.com/antonioricardojr/predicao-filmes
 ###           https://nycdatascience.com/blog/student-works/web-scraping/movie-rating-prediction/
 
 ```{r}
-dados2014 <- read.csv("~/Documentos/Github/analiseDeDados/dados/eleicoes2014.csv", encoding = "latin1")
+eleicoes2014 <- read.csv("~/Documentos/Github/analiseDeDados/dados/eleicoes2014.csv", encoding = "latin1")
 ```
 
 ### 1. Um modelo de regressão múltipla com todas as variáveis é plausível para explicar a variação em y (número de votos)? Justifique sua resposta.
 
 ```{r}
-dados2014.semCargo <- dados2014 %>%
-  select(-cargo)
-lm(data = dados2014.semCargo, votos ~ .) %>% summary()
+eleicoes2014.semCargoNomeSequencial <- eleicoes2014 %>%
+  select(-cargo, -nome, -sequencial_candidato, -numero_cadidato, -setor_economico_receita, -setor_economico_despesa)
 ```
 
+Antes de gerar um modelo de regressão para explicar o número de votos, vamos observador os dados disponibilizados. Logo de cara é possível notar que existem colunas com grande número de dados ausentes. Por causa disso, vou preencher os valores ausentes com o valor médio das colunas. As variáveis que terão valores preenchidos são: recursos_de_outros_candidatos.comites, recursos_de_partidos, recursos_de_pessoas_físicas, recursos_de_pessoas_juridicas e recursos_proprios.
+
+```{r}
+# Coluna recursos_de_outros_candidatos.comites
+eleicoes2014$recursos_de_outros_candidatos.comites[is.na(eleicoes2014$recursos_de_outros_candidatos.comites)] <- median(eleicoes2014$recursos_de_outros_candidatos.comites, na.rm = TRUE)
+# Coluna recursos_de_partidos
+eleicoes2014$recursos_de_partidos[is.na(eleicoes2014$recursos_de_partidos)] <- median(eleicoes2014$recursos_de_partidos, na.rm = TRUE)
+# Coluna recursos_de_pessoas_físicas
+eleicoes2014$recursos_de_pessoas_físicas[is.na(eleicoes2014$recursos_de_pessoas_físicas)] <- median(eleicoes2014$recursos_de_pessoas_físicas, na.rm = TRUE)
+# Coluna recursos_de_pessoas_juridicas
+eleicoes2014$recursos_de_pessoas_juridicas[is.na(eleicoes2014$recursos_de_pessoas_juridicas)] <- median(eleicoes2014$recursos_de_pessoas_juridicas, na.rm = TRUE)
+# Coluna recursos_proprios
+eleicoes2014$recursos_proprios[is.na(eleicoes2014$recursos_proprios)] <- median(eleicoes2014$recursos_proprios, na.rm = TRUE)
+```
+
+```{r echo=FALSE}
+lm(data = eleicoes2014.semCargoNomeSequencial, votos ~ .) %>% summary()
+```
+
+Não é plausível. Nos dados existem variáveis que não fazem sentido em seres utilizadas para um modelo de regressão que explique a variação de votos, como Nome e Sequencial_candidato.
 
 ### 2. Todas as variáveis são úteis para o modelo de regressão? Há variáveis redudantes? Justifique sua resposta em ambos os casos.
 
 ```{r}
 
 ```
+
+Nem todas as variáveis são úteis para o modelo. A váriavel cargo possuem sempre o valor de "DEPUTADO FEDERAL", por exemplo.
 
 ### 3. No caso de haver variáveis pouco explicativas e/ou redudantes, construa um novo modelo sem essas variáveis e o compare ao modelo com todas as variáveis (e.g. em termos de R2 e RSE).
 
