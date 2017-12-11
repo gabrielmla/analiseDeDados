@@ -1,0 +1,84 @@
+---
+title: "Predição de Votação de Deputados"
+author: "Gabriel Morais Lúcio de Araújo"
+date: "11 de dezembro de 2017"
+output: html_document
+---
+```{r}
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(scales)
+library(readr)
+library(plotly)
+library(caret)
+```
+
+```{r echo=FALSE}
+eleicoes2014 <- read.csv("~/Documentos/Github/analiseDeDados/dados/eleicoes2014.filtrado.csv", encoding = "latin1")
+```
+
+```{r}
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(eleicoes2014))
+
+## set the seed to make your partition reproductible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(eleicoes2014)), size = smp_size)
+
+train <- eleicoes2014[train_ind, ]
+test <- eleicoes2014[-train_ind, ]
+```
+
+### 1. Usando todas as variáveis disponíveis, tune (usando validação cruzada): (i) um modelo de regressão Ridge, (ii) um modelo de regressão Lasso e (iii) um modelo KNN. Para os modelos de regressão linear, o parâmetro a ser tunado é o lambda (penalização dos coeficientes) e o KNN o número de vizinhos. (9 pts.)
+```{r warning=FALSE}
+fitControl <- trainControl(method = "repeatedcv",
+                           number = 5,
+                           repeats = 5,
+                           search = "random")
+
+lambdaGrid <- expand.grid(lambda = 10^seq(10, -2, length=100))
+
+model.ridge <- train(votos ~ .,
+               data = train,
+               method = "ridge",
+               trControl = fitControl,
+               preProcess = c('nzv'))
+model.ridge
+
+model.lasso <- train(votos ~ .,
+               data = train,
+               method = "lasso")
+model.lasso
+
+model.knn <- train(votos ~ .,
+               data = train,
+               method = "knn")
+model.knn
+```
+
+### 2. Compare os três modelos em termos do erro RMSE de validação cruzada. (9 pts.)
+```{r warning=FALSE}
+
+```
+
+### 3. Quais as variáveis mais importantes segundo o modelo de regressão Ridge e Lasso?  Variáveis foram descartadas pelo Lasso? Quais? (9 pts.)
+```{r warning=FALSE}
+
+```
+
+### 4. Re-treine o melhor modelo (usando os melhores valores de parâmetros encontrados em todos os dados, sem usar validação cruzada). (9 pts.)
+```{r warning=FALSE}
+
+```
+
+### 5. Use esse último modelo treinado para prever os dados de teste que disponibilizaremos por meio da plataforma Kaggle: (a ser disponibilizado) (9 pts.)
+```{r warning=FALSE}
+
+```
+
