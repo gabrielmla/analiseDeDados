@@ -19,7 +19,10 @@ library(corrplot)
 ```
 
 ```{r}
-eleicoes2014 <- read.csv("~/Documentos/Github/analiseDeDados/dados/eleicoes2014.csv", encoding = "latin1")
+eleicoes2014 <- read.csv("~/Github/analiseDeDados/dados/eleicoes2014.csv", encoding = "latin1")
+eleicoes2014.semCategoricas <- eleicoes2014 %>%
+  select(-cargo, -nome, -sequencial_candidato, -numero_cadidato)
+write.csv(eleicoes2014.semCategoricas, "eleicoes2014.filtrado.csv", row.names = FALSE)
 ```
 
 ### 1. Um modelo de regressão múltipla com todas as variáveis é plausível para explicar a variação em y (número de votos)? Justifique sua resposta.

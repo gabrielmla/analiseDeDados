@@ -4,9 +4,6 @@ author: "Gabriel Morais Lúcio de Araújo"
 date: "11 de dezembro de 2017"
 output: html_document
 ---
-```{r}
-
-```
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -20,7 +17,14 @@ library(caret)
 ```
 
 ```{r echo=FALSE}
-eleicoes2014 <- read.csv("~/Documentos/Github/analiseDeDados/dados/eleicoes2014.filtrado.csv", encoding = "latin1")
+eleicoes2014 <- read.csv("~/Github/analiseDeDados/dados/eleicoes2014.filtrado.csv", encoding = "latin1")
+trainK <- read.csv("~/Github/analiseDeDados/dados/train.csv", encoding = "latin1")
+trainK <- trainK %>% select(-cargo, -nome, -numero_cadidato)
+trainK[is.na(trainK)] <- 0
+testK <- read.csv("~/Github/analiseDeDados/dados/test.csv", encoding = "latin1")
+testK <- testK %>% select(-cargo, -nome, -numero_cadidato)
+testK[is.na(testK)] <- 0
+eleicoes2014[is.na(eleicoes2014)] <- 0
 ```
 
 ```{r}
@@ -33,52 +37,98 @@ train_ind <- sample(seq_len(nrow(eleicoes2014)), size = smp_size)
 
 train <- eleicoes2014[train_ind, ]
 test <- eleicoes2014[-train_ind, ]
+
+## Kaggle
+train.kaggle <- trainK
+test.kaggle <- testK
 ```
 
 ### 1. Usando todas as variáveis disponíveis, tune (usando validação cruzada): (i) um modelo de regressão Ridge, (ii) um modelo de regressão Lasso e (iii) um modelo KNN. Para os modelos de regressão linear, o parâmetro a ser tunado é o lambda (penalização dos coeficientes) e o KNN o número de vizinhos. (9 pts.)
+
+1 - Method = Ridge
 ```{r warning=FALSE}
 fitControl <- trainControl(method = "repeatedcv",
                            number = 5,
-                           repeats = 5,
-                           search = "random")
+                           repeats = 5)
 
-lambdaGrid <- expand.grid(lambda = 10^seq(10, -2, length=100))
+preProcValues <- c("center", "scale", "nzv")
 
-model.ridge <- train(votos ~ .,
-               data = train,
-               method = "ridge",
+model.ridge <- train(votos ~ ., 
+               data = train.kaggle,
                trControl = fitControl,
-               preProcess = c('nzv'))
+               method = "ridge",
+               preProcess = preProcValues,
+               tuneLength = 15)
 model.ridge
+```
 
+2- Method = Lasso
+```{r}
 model.lasso <- train(votos ~ .,
-               data = train,
-               method = "lasso")
+                     data = train.kaggle,
+                     trControl = fitControl,
+                     method = "lasso",
+                     preProcess = preProcValues,
+                     tuneLength = 15)
 model.lasso
+```
 
+3 - Method = KNN
+```{r}
 model.knn <- train(votos ~ .,
-               data = train,
-               method = "knn")
+                     data = train.kaggle,
+                     trControl = fitControl,
+                     method = "knn",
+                     preProcess = preProcValues,
+                     tuneLength = 15)
 model.knn
 ```
 
 ### 2. Compare os três modelos em termos do erro RMSE de validação cruzada. (9 pts.)
-```{r warning=FALSE}
 
-```
+O RSME do melhor para o pior foi: KNN = 32318.88, Ridge = 33278.90, Lasso = 33317.17. Não foi utilizado search = "random" no trainControl, pois o modelo KNN não executava com esse atributo.
 
 ### 3. Quais as variáveis mais importantes segundo o modelo de regressão Ridge e Lasso?  Variáveis foram descartadas pelo Lasso? Quais? (9 pts.)
-```{r warning=FALSE}
 
+1 - Modelo Ridge
+```{r warning=FALSE}
+ggplot(varImp(model.ridge))
 ```
+
+2 - Modelo Lasso
+```{r}
+ggplot(varImp(model.lasso))
+```
+
+As váriaveis mais importantes foram: total_receita, total_despesa, recursos_de_pessoas_juridicas, quantidade_despesas, quantidade_doacoes, quantidade_fornecedores, recursos_de_partidos e media_receita. As váriaveis menos importantes foram: setor_economico_receita, setor_economico_despesa, -ID, -UF, -partido, recursos_proprios e recursos_de_outros_cadidatos.comites. As váriaveis menos importantes serão descartadas no re-treino do modelo KNN, que obteve melhor RSME.
 
 ### 4. Re-treine o melhor modelo (usando os melhores valores de parâmetros encontrados em todos os dados, sem usar validação cruzada). (9 pts.)
 ```{r warning=FALSE}
+train.kaggle <- train.kaggle %>% select (-setor_economico_receita, -ID, -partido, -UF, -recursos_proprios, -recursos_de_outros_candidatos.comites, -setor_economico_despesa)
 
+test.kaggle <- test.kaggle %>% select (-setor_economico_receita, -ID, -partido, -UF, -recursos_proprios, -recursos_de_outros_candidatos.comites, -setor_economico_despesa)
+
+grid <- expand.grid(k = model.knn$bestTune)
+tr <- trainControl(method = "optimism_boot")
+model.knn <- train(votos ~ ., 
+               data = train.kaggle,
+               method = "knn",
+               tuneGrid = grid,
+               trControl = tr,
+               preProcess = preProcValues)
+model.knn
 ```
 
 ### 5. Use esse último modelo treinado para prever os dados de teste que disponibilizaremos por meio da plataforma Kaggle: (a ser disponibilizado) (9 pts.)
 ```{r warning=FALSE}
+pred <- predict(model.knn, test.kaggle)
+```
 
+```{r}
+ID <-testK %>% select(ID)
+submission.csv <- ID
+submission.csv$votos <- pred
+submission.csv$votos[submission.csv$votos < 0] <- 0
+write.csv(submission.csv, "sample_submission.csv", row.names=FALSE)
 ```
 
