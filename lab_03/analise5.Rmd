@@ -18,30 +18,28 @@ library(rpart.plot)
 ```
 
 ```{r echo=FALSE}
-eleicoes2014 <- read.csv("~/Documentos/Github/analiseDeDados/dados/eleicoes2014.filtrado.csv", encoding = "latin1")
-trainK <- read.csv("~/Documentos/Github/analiseDeDados/lab_03/train.csv", encoding = "latin1")
+trainK <- read.csv("~/Github/analiseDeDados/lab_03/train.csv", encoding = "latin1")
 trainK <- trainK %>% select(-nome, -numero_cadidato, -ID)
 trainK[is.na(trainK)] <- 0
-testK <- read.csv("~/Documentos/Github/analiseDeDados/lab_03/test.csv", encoding = "latin1")
+testK <- read.csv("~/Github/analiseDeDados/lab_03/test.csv", encoding = "latin1")
 testK <- testK %>% select(-nome, -numero_cadidato, -ID)
 testK[is.na(testK)] <- 0
-eleicoes2014[is.na(eleicoes2014)] <- 0
 ```
 
 ```{r}
-## 75% of the sample size
-smp_size <- floor(0.75 * nrow(eleicoes2014))
-
-## set the seed to make your partition reproductible
-set.seed(123)
-train_ind <- sample(seq_len(nrow(eleicoes2014)), size = smp_size)
-
-train <- eleicoes2014[train_ind, ]
-test <- eleicoes2014[-train_ind, ]
-
 ## Kaggle
 train.kaggle <- trainK
 test.kaggle <- testK
+
+## 75% of the sample size
+smp_size <- floor(0.75 * nrow(train.kaggle))
+
+## set the seed to make your partition reproductible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(train.kaggle)), size = smp_size)
+
+train <- train.kaggle[train_ind, ]
+test <- train.kaggle[-train_ind, ]
 ```
 
 ### 1.Há desbalanceamento das classes (isto é, uma classe tem muito mais instâncias que outra)? Em que proporção? Quais efeitos colaterais o desbalanceamento de classes pode causar no classificador?
@@ -53,6 +51,9 @@ train.kaggle.count.total <- train.kaggle %>%
   count()
 nao_eleito.proportion <- 3719/4135
 eleito.proportion <- 416/4135
+
+train.kaggle %>%
+  ggplot(aes(situacao_final)) + geom_histogram(stat="count")
 ```
 
 Classe        | eleito       | nao_eleito  | Total
@@ -60,18 +61,25 @@ Classe        | eleito       | nao_eleito  | Total
 Instâncias    | 3719         | 416         | 4135
 Proporção     | 0.1006       | 0.8993      | 1
 
-Como podemos ver existe um desbalanceamento da classe situacao_final. Existem muito mais instâncias de **nao_eleito** do que de **eleito**, isso ira causar um desbalanceamento no classificador, que será mais tendencioso para **nao_eleito**. O classificador irá prever muito mais **nao_eleito**, poderiam ser utilizadas técnicas de balanceamento da clase. Por exemplo *Over Sampling*, onde serão inseridos dados da classe que possui menos instâncias.
+Como podemos ver existe um desbalanceamento da classe situacao_final. Existem muito mais instâncias de **nao_eleito** do que de **eleito**, isso ira causar um desbalanceamento no classificador, que será mais tendencioso para **nao_eleito**. O classificador irá prever muito mais **nao_eleito**, poderiam ser utilizadas técnicas de balanceamento da clase. Por exemplo *Over Sampling*, onde serão inseridos dados da classe que possui menos instâncias, e *Under Sampling*, onde serão removidos dados da classe com mais instâncias. Usarei o *Under Sampling* nesta análise.
 
 ### 2.Treine: um modelo de regressão logística, uma árvore de decisão e um modelo de adaboost. Tune esses modelos usando validação cruzada e controle overfitting se necessário, considerando as particularidades de cada modelo. 
 
 ```{r warning=FALSE}
-train.kaggle$isDeputado <- ifelse(train.kaggle$descricao_ocupacao == 'DEPUTADO', 1, 0)
-formula = as.formula(situacao_final ~ total_despesa + sexo + isDeputado + descricao_cor_raca + despesa_max_campanha)
+fitControlUndersampling <- trainControl(method = "repeatedcv", number = 5, repeats = 5, sampling="down")
+train$isDeputado <- ifelse(train$descricao_ocupacao == 'DEPUTADO', 1, 0)
+train$isHomem <- ifelse(train$sexo == 'MASCULINO', 1, 0)
+
+preProcessing <- c("scale", "center", "nzv")
+
+formula = as.formula(situacao_final ~ total_despesa + isDeputado + isHomem + descricao_cor_raca + despesa_max_campanha)
 
 modelo.glm <- train(formula,
-                 data = train.kaggle,
+                 data = train,
                  method="glm",
-                 family="binomial")
+                 family="binomial",
+                 trControl = fitControlUndersampling,
+                 preProcess = preProcessing)
 
 summary(modelo.glm)
 ```
@@ -79,26 +87,33 @@ summary(modelo.glm)
 Após executar o modelo glm, retirei as váriaveis que tinham graus de significância maior que **(0.001), deixando apenas as váriaveis mais significantes.
 
 ```{r}
-#arvore1 <- train(formula,
-                 data=treino,
-                 method = "rpart",
-                 cp=0.001,  # parâmetro de complexidade
-                 maxdepth=20)
+modelo.arvore <- train(formula,
+                       data= train,
+                       method="rpart",
+                       na.action = na.omit, 
+                       trControl = fitControlUndersampling,
+                       preProcess = preProcessing,
+                       cp=0.001,
+                       maxdepth=20)
 
-control <- rpart.control(maxdepth=20,
-                         minsplit=20,
-                         cp=0.001)
- 
-arvore2 <- rpart(formula, data=treino, control = control)
+modelo.arvore
+
+# <- rpart.control(maxdepth=20,
+#                        minsplit=20,
+#                        cp=0.001)
+#
+#arvore2 <- rpart(formula, data=treino, control = control)
 
 # Usando o rpart você pode visualizar a árvore
-prp(arvore2)
+#prp(arvore2)
 ```
 
 ```{r}
-modelo <- train(formula,
-                data=treino,
-                method = "adaboost")
+modelo.adaboost <- train(formula,
+                         data= train,
+                         method="adaboost",
+                         na.action = na.omit, 
+                         preProcess = preProcessing)
 
 modelo.adaboost
 ```
@@ -106,7 +121,36 @@ modelo.adaboost
 ### 3.Reporte acurácia, precision, recall e f-measure no treino e validação. Como você avalia os resultados? Justifique sua resposta.
 
 ```{r}
+test$isDeputado <- ifelse(test$descricao_ocupacao == 'DEPUTADO', 1, 0)
+test$isHomem <- ifelse(test$sexo == 'MASCULINO', 1, 0)
+# Predição
+test$prediction <- predict(modelo.adaboost, test)
 
+# Número de vezes que o modelo acertou um candidato eleito
+acerto.eleito <- test %>% filter(situacao_final == "eleito", prediction == "eleito") %>% nrow()
+
+# Número de vezes que o modelo não acertou um candidato eleito
+erro.eleito <- test %>% filter(situacao_final == "nao_eleito" , prediction == "eleito") %>% nrow() 
+
+# # Número de vezes que o modelo acertou um candidato não_eleito
+acerto.n_eleito <- test %>% filter(situacao_final == "nao_eleito" , prediction == "nao_eleito" ) %>% nrow()
+
+# Número de vezes que o modelo não acertou um candidato não_eleito
+erro.n_eleito <- test %>% filter(situacao_final == "eleito", prediction == "nao_eleito" ) %>% nrow()
+
+accuracy <- (acerto.eleito + acerto.n_eleito)/(acerto.eleito + acerto.n_eleito + erro.eleito + erro.n_eleito) 
+precision <- acerto.eleito / (acerto.eleito + erro.eleito)
+recall <- acerto.eleito / (acerto.eleito + erro.n_eleito)
+
+# média harmônica da precisão e recall
+f_measure <- 2 * (precision * recall) / (precision + recall)
+
+f_measure
+accuracy
+precision
+recall
+
+confusionMatrix(test$prediction, test$situacao_final)
 ```
 
 ### 4.Interprete as saídas dos modelos. Quais atributos parecem ser mais importantes de acordo com cada modelo? Crie pelo menos um novo atributo que não está nos dados originais e estude o impacto desse atributo.
