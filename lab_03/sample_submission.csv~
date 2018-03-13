@@ -1,0 +1,18 @@
+import { AppRoutingModule } from '../app-routing.module';
+
+import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
+import { AdmTabsComponent } from "./adm-tabs/adm-tabs.component";
+
+@NgModule({
+  imports: [
+    CommonModule,
+    NgbModule,
+    AppRoutingModule
+  ],
+  declarations: [
+    AdmTabsComponent
+  ],
+  exports: [
+    AdmTabsComponent
+  ]
+})

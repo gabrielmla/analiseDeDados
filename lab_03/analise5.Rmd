@@ -18,11 +18,9 @@ library(rpart.plot)
 ```
 
 ```{r echo=FALSE}
-trainK <- read.csv("~/Github/analiseDeDados/lab_03/train.csv", encoding = "latin1")
-trainK <- trainK %>% select(-nome, -numero_cadidato, -ID)
+trainK <- read.csv("~/Documents/github/analiseDeDados/lab_03/train.csv", encoding = "latin1")
 trainK[is.na(trainK)] <- 0
-testK <- read.csv("~/Github/analiseDeDados/lab_03/test.csv", encoding = "latin1")
-testK <- testK %>% select(-nome, -numero_cadidato, -ID)
+testK <- read.csv("~/Documents/github/analiseDeDados/lab_03/test.csv", encoding = "latin1")
 testK[is.na(testK)] <- 0
 ```
 
@@ -86,25 +84,22 @@ Após executar o modelo glm, retirei as váriaveis que tinham graus de signific�
 
 ```{r}
 formula = as.formula(situacao_final ~ total_despesa + descricao_ocupacao + media_receita + descricao_cor_raca + despesa_max_campanha)
-
-modelo.arvore <- train(formula,
-                       data= train,
-                       method="rpart",
-                       na.action = na.omit, 
-                       trControl = fitControlUndersampling,
-                       preProcess = preProcessing,
-                       cp=0.001,
-                       maxdepth=20)
+modelo.arvore <- train(
+    x = train[, names(train) != "situacao_final"],
+    y = train$situacao_final,
+    method = "rpart",
+    trControl = fitControlUndersampling,
+    control = rpart.control(cp = 0.001))
 
 modelo.arvore
 ```
 
 ```{r}
-modelo.adaboost <- train(formula,
-                         data= train,
-                         method="adaboost",
-                         na.action = na.omit, 
-                         preProcess = preProcessing)
+modelo.adaboost <- train(x = train[, names(train) != "situacao_final"],
+                y = train$situacao_final,
+                method = "adaboost",
+                trControl = fitControlUndersampling,
+                preProcess = preProcessing)
 
 modelo.adaboost
 ```
@@ -142,7 +137,7 @@ recall
 confusionMatrix(test$prediction, test$situacao_final)
 ```
 
-Na validação, o valor da acurácia foi 0.9207. É um resultado satisfatório, pois indica que o modelo conseguiu realizar a predição do resultado da eleição na maioria dos casos. O f-measure é medido calculando a média harmônica entre precisão e recall, ter valor próximo a 1 é um bom indicador que o modelo é um bom preditor.
+Na validação, o valor da acurácia foi 0.9052. É um resultado satisfatório, pois indica que o modelo conseguiu realizar a predição do resultado da eleição na maioria dos casos. O f-measure é medido calculando a média harmônica entre precisão e recall, ter valor próximo a 1 é um bom indicador que o modelo é um bom preditor.
 
 ### 4.Interprete as saídas dos modelos. Quais atributos parecem ser mais importantes de acordo com cada modelo? Crie pelo menos um novo atributo que não está nos dados originais e estude o impacto desse atributo.
 
@@ -157,7 +152,7 @@ formula = as.formula(situacao_final ~ total_despesa + isDeputado + media_receita
 Foram criado os atributos isDeputado (1 = DEPUTADO, 0 = Caso contrário) e isHomem (1 = HOMEM, 0 = Caso contrário). Vamos avaliar o impacto desses atributos nos modelos a seguir.
 
 * Regressão Logística
-```{r}
+```{r warning=FALSE}
 # Antes dos novos atributos
 summary(modelo.glm)
 
@@ -181,14 +176,13 @@ No modelo de Regressão Logística a inserção do atributo isDeputado teve rele
 varImp(modelo.arvore)
 
 # Treino com novos atributos
-modelo.arvore2 <- train(formula,
-                       data= train,
-                       method="rpart",
-                       na.action = na.omit, 
-                       trControl = fitControlUndersampling,
-                       preProcess = preProcessing,
-                       cp=0.001,
-                       maxdepth=20)
+modelo.arvore2 <- train(
+    x = train[, names(train) != "situacao_final"],
+    y = train$situacao_final,
+    method = "rpart",
+    trControl = fitControlUndersampling,
+    control = rpart.control(cp = 0.001))
+
 
 # Depois dos novos atributos
 varImp(modelo.arvore2)
@@ -197,7 +191,7 @@ varImp(modelo.arvore2)
 Para a Árvore de Decisões, os atributos *total_despesa, media_receita e isDeputado* parecem ser mais importantes. A inserção da variável isDeputado não aumentou a acurácia de forma significante.
 
 * Adaboost
-```{r}
+```{r warning=FALSE}
 # Antes dos novos atributos
 varImp(modelo.adaboost)
 
@@ -205,15 +199,20 @@ varImp(modelo.adaboost)
 modelo.adaboost2 <- train(x = train[, names(train) != "situacao_final"],
                 y = train$situacao_final,
                 method = "adaboost",
-                trControl = fitControl)
+                trControl = fitControlUndersampling,
+                preProcess = preProcessing)
 
 # Depois dos novos atributos
 varImp(modelo.adaboost2)
 ```
 
 Para o Adaboost, *total_receita, total_despesa, quantidade_despesas, quantidade_fornecedores, quantidade_doacoes, media_receita, quantidade_doadores, recursos_de_pessoas_físicas, recursos_de_pessoas_juridicas, recursos_de_partidos, e media_despesa* foram as variáveis mais importantes, o novo atributo isDeputados não apresenteu muita importância para o modelo.
+
 ```{r}
-newCSV <- ID
-newCSV$prediction <- test$prediction
-write.csv(newCSV, "sample_submission.csv", row.names=FALSE)
+
+ID <-test %>% select(ID)
+submission.csv <- ID
+submission.csv["prediction"] <- test$prediction
+submission.csv <- head(submission.csv, -22)
+write.csv(submission.csv, "submission.csv", row.names=FALSE)
 ```

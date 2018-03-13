@@ -1,0 +1,74 @@
+---
+title: "Deep Learning em R com Keras"
+author: "Gabriel Morais Lúcio de Araújo"
+date: "March 13, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Olá! Neste tutorial iremos utilizar Deep Learning no R com o pacote *keras*. **Deep Learning** é um campo de estudo derivado de Aprendizado de Máquina (Machine Learning) e consiste de algoritmos que são inspirados pelo funcionamento e a estrutura do cerébro.
+
+### Sumário
+
+* Visão geral sobre pacotes de Deep Learning para R
+* Keras, keras e KerasR
+* Instalando o pacote keras
+* Carregando os dados
+* Explorando os dados
+* Processando os dados
+* Construindo o modelo
+* Compilando e ajustando o modelo
+* Visualizando o histórico do modelo
+* Predizendo valores
+* Avaliando o modelo
+* Tuning do modelo
+* Salvando, carregando e exportando o modelo
+* Conclusão
+
+### **Visão geral sobre pacotes de Deep Learning para R**
+Com o aumento da popularidade de Deep Learning o número de pacotes que o implementam aumentaram. Vejamos abaixo uma tabela com os pacotes mais utilizados para R:
+
+R Package	 | Percentile	| Description
+-----------|------------|-------------------------------------------------------------------------------------------------------
+nnet	     | 96th	      | Software for feed-forward neural networks with a single hidden layer, and for multinomial log-linear models.
+neuralnet	 | 96th	      | Training of neural networks using backpropagation
+h2o	       | 95th	      | R scripting functionality for H2O
+RSNNS	     | 88th	      | Interface to the Stuttgart Neural Network Simulator (SNNS)
+tensorflow | 88th	      | Interface to TensorFlow
+deepnet	   | 84th	      | Deep learning toolkit in R
+darch	     | 79th	      | Package for Deep Architectures and Restricted Boltzmann Machines
+rnn	       | 73rd	      | Package to implement Recurrent Neural Networks (RRNs)
+FCNN4R	   | 52nd	      | Interface to the FCNN library that allows user-extensible ANNs
+rcppDL	   | 7th	      | Implementation of basic machine learning methods with many layers (deep learning), including dA (Denoising Autoencoder), SdA (Stacked Denoising Autoencoder), RBM (Restricted Boltzmann machine) and DBN (Deep Belief Nets)
+deepr	     | ??*	      | Package to streamline the training, fine-tuning and predicting processes for deep learning based on darch and deepnet
+MXNetR	   | ??*	      | Package that brings flexible and efficient GPU computing and state-of-art deep learning to R
+
+###### Os pacotes *deepr* e *MXNetR* não foram encontrados na documentação do R, por isso os percentis não forum incluídos na tabela.
+
+[Fonte](https://cran.r-project.org/view=MachineLearning)
+
+### **Keras, keras e KerasR**
+Recentemente dois pacotes chegaram para a biblioteca R, o *KerasR* e o pacote para RStudio *keras*. Ambos provêm uma interface do pacote original *Keras* para **Python**. Interface significa que esses pacotes possibilitam um desenvolvimento utilizando a linguagem R, porém tendo acesso a praticamente todas as funcionalidades que o pacote *Keras* do python tem a oferecer!
+
+As diferenças básicas entre os pacotes *KerasR* e *keras* são:
+
+* O pacote *keras* utiliza o operador **pipe** (%>%) para conectar funções e operadores, assim aumentando muito a legibilidade do código.
+* O pacote *KerasR* possui algumas funções com nome diferente das funçõe do pacote *Keras*. Isso talvez seja uma dificuldade, pois existem muitas discussões e tutoriais que utilizam o pacote *Keras* do python que poderiam ser aplicados ao pacote *keras*.
+
+Com base nestes pontos, iremos utilizar o pacote *keras* do RStudio. Então vamos para a sua instalação!
+
+### **Instalando o pacote keras**
+### **Carregando os dados**
+### **Explorando os dados**
+### **Processando os dados**
+### **Construindo o modelo**
+### **Compilando e ajustando o modelo**
+### **Visualizando o histórico do modelo**
+### **Predizendo valores**
+### **Avaliando o modelo**
+### **Tuning do modelo**
+### **Salvando, carregando e exportando o modelo**
+### **Conclusão**
