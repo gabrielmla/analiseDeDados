@@ -7,6 +7,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(keras)
+library(tensorflow)
 ```
 
 Olá! Neste tutorial iremos utilizar Deep Learning no R com o pacote *keras*. **Deep Learning** é um campo de estudo derivado de Aprendizado de Máquina (Machine Learning) e consiste de algoritmos que são inspirados pelo funcionamento e a estrutura do cerébro.
@@ -46,7 +48,7 @@ rcppDL	   | 7th	      | Implementation of basic machine learning methods with ma
 deepr	     | ??*	      | Package to streamline the training, fine-tuning and predicting processes for deep learning based on darch and deepnet
 MXNetR	   | ??*	      | Package that brings flexible and efficient GPU computing and state-of-art deep learning to R
 
-###### Os pacotes *deepr* e *MXNetR* não foram encontrados na documentação do R, por isso os percentis não forum incluídos na tabela.
+> ###### Os pacotes *deepr* e *MXNetR* não foram encontrados na documentação do R, por isso os percentis não forum incluídos na tabela.
 
 [Fonte](https://cran.r-project.org/view=MachineLearning)
 
@@ -61,9 +63,113 @@ As diferenças básicas entre os pacotes *KerasR* e *keras* são:
 Com base nestes pontos, iremos utilizar o pacote *keras* do RStudio. Então vamos para a sua instalação!
 
 ### **Instalando o pacote keras**
+Primeiramente abra o **RStudio** e vá na aba `Tools` no menu superior, em seguida clique em `Install Packages...` e pesquise pelo pacote `keras`. Quando o pacote terminar de ser instalado, adicione o pacote no seu arquivo, para isso basta adicionar `library(keras)` em um bloco de código R no ínicio do arquivo.
+
+Por último instale e adicione o pacote `tensorflow` seguindo os mesmos passos de instalção ditos anteriormente.
+
+> ###### Caso encontre algum problema veja os passos descritos no site oficial do pacote [aqui](https://rstudio.github.io/keras/)
+
 ### **Carregando os dados**
+Para carregar os dados você tem **três** opções:
+
+1. **Utilizar um dos *datasets* que o `keras` oferece**
+    + O keras possui *datasets* que vem com a instalação do pacote. Por exemplo ele disponibiliza *datasets* para MNIST, CIFAR10 e IMDB. Eles podem ser carregados com `mnist <- dataset_mnist()`, `cifar10 <- dataset_cifar10()` ou `imdb <- dataset_imdb()`, respectivamente.
+    
+2. **Utilizar o seu próprio *dataset*, por exemplo a partir de arquivos *.csv***
+    + Neste tutorial iremos utilizar a opção de carregar um arquivo *.csv* com o comando `read.csv()`. Iremos obter os dados a partir do [UCI Machine Learning Repository](http://archive.ics.uci.edu/ml/index.php).
+    + Para obter os dados execute `iris <- read.csv(url("http://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"), header = FALSE)`. Em seguida é importante checar se a importação dos dados foi bem sucedida, para isso execute `head(iris)`, `str(iris)` e `dim(iris)`.
+    
+3. **Ou produzir um *dummy dataset***
+    + De forma alternativa você pode criar seus próprios dados com ajuda co comando `matrix()`. Por exemplo `data <- matrix(rexp(1000*784), nrow = 1000, ncol = 784)` para criar o dummy data e `labels <- matrix(round(runif(1000*10, min = 0, max = 9)), nrow = 1000, ncol = 10)` para criar valores alvos para seu dummy data criado anteriormente. Em seguida é muito importante analisar os dados gerados, pois conhecer seus dados antes de analisá-los ajuda muito na sua compreensão.
+    
+```{r}
+iris <- read.csv(url("http://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"), header = FALSE)
+
+head(iris)
+
+str(iris)
+
+dim(iris)
+```
+
+
 ### **Explorando os dados**
+Agora com os dados importados é importante saber o que eles são. Vendo a imagem abaixo, iremos tentar diferenciar os três tipos de iris com base nos dados.
+![](https://s3.amazonaws.com/assets.datacamp.com/blog_assets/iris-machinelearning.png)
+
+A importação com `read.csv()` gera um *dataframe*, mas para podermos utilizar a função `fit()` teremos que utilizar os dados em formato de *array* ou *matrix*, ambos não possuem nomes para as colunas.
+
+Por enquanto colunas com nomes podem ajudar no entendimento dos dados, então vamos nomea-las, pois os dados importados estão com colunas com nomes como V1, V2 ... Execute o bloco de código abaixo:
+
+```{r}
+names(iris) <- c("Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width", "Species")
+
+plot(iris$Petal.Length, 
+     iris$Petal.Width, 
+     pch=21, bg=c("red","green3","blue")[unclass(iris$Species)], 
+     xlab="Petal Length", 
+     ylab="Petal Width")
+```
+
+Analisando de forma rápida é possível notar uma correlação entre a largura e o tamanho das petálas. Para confirmar e obter um valor númerico sobre isso utilize a fução `cor()`:
+
+```{r}
+cor(iris$Petal.Length, iris$Petal.Width)
+```
+
 ### **Processando os dados**
+Antes de gerar um modelo, precisamos processar os dados. Isto é limpar, normalizar (se necessário) e dividir os dados em treino e teste.
+
+Os dados obtidos do [UCI Machine Learning Repository](http://archive.ics.uci.edu/ml/index.php) já estão limpos, mas se quiser verificar execute o código abaixo:
+
+```{r}
+summary(iris)
+
+str(iris)
+```
+
+Agora vamos analisar se os dados precisam ser **Normalizados**. A partir dos resultados obtidos com a função `summary()` podemos ver que o atributo Sepal.Lenght varia entre 4.3 e 7.3 e Sepal.Width varia entre 2 e 4.4, enquanto Petal.Lenght varia entre 1 e 6.9 e Petal.Width varia entre 0.1 e 2.5. No geral, todos os valores estão no intervalor de 0.1 e 7.9, o que é considerado aceitável e assim os dados não precisam ser normalizados.
+
+Porém, caso você precise normalizar outros *datasets* veja os exemplos abaixo de normalização com uma função própria e outra forma utilzando o `keras`.
+
+* Você pode criar sua própria função de normalização, neste exemplo irei utilizar uma função de `min-max` para realizar essa tarefa, veja abaixo:
+```{r}
+# Build your own `normalize()` function
+normalize <- function(x) {
+  num <- x - min(x)
+  denom <- max(x) - min(x)
+  return (num/denom)
+}
+
+# Normalize the `iris` data
+iris_norm <- as.data.frame(lapply(iris[1:4], normalize))
+
+head(iris)
+```
+
+* Ou você pode utilizar as funções do keras para isso:
+```{r}
+# Nomarlizando os dados iris
+iris <- normalize(iris[,1:4])
+
+summary(iris)
+```
+
+Por último vamos criar nossos dados de treino e de testes, para assegurar que o modelo irá conseguir prever dados que estão fora dos dados que ele foi treinado.
+
+```{r}
+# Determinando do tamanho dos sets
+ind <- sample(2, nrow(iris), replace=TRUE, prob=c(0.67, 0.33))
+
+# Dividindo o dataset iris
+iris.training <- iris[ind==1, 1:4]
+iris.test <- iris[ind==2, 1:4]
+
+# Atribuindo os dados de treino e teste
+iris.trainingtarget <- iris[ind==1, 5]
+iris.testtarget <- iris[ind==2, 5]
+```
+
 ### **Construindo o modelo**
 ### **Compilando e ajustando o modelo**
 ### **Visualizando o histórico do modelo**
