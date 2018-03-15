@@ -1,13 +1,77 @@
-R Package	Percentile	Description
-nnet	96th	Software for feed-forward neural networks with a single hidden layer, and for multinomial log-linear models.
-neuralnet	96th	Training of neural networks using backpropagation
-h2o	95th	R scripting functionality for H2O
-RSNNS	88th	Interface to the Stuttgart Neural Network Simulator (SNNS)
-tensorflow	88th	Interface to TensorFlow
-deepnet	84th	Deep learning toolkit in R
-darch	79th	Package for Deep Architectures and Restricted Boltzmann Machines
-rnn	73rd	Package to implement Recurrent Neural Networks (RRNs)
-FCNN4R	52nd	Interface to the FCNN library that allows user-extensible ANNs
-rcppDL	7th	Implementation of basic machine learning methods with many layers (deep learning), including dA (Denoising Autoencoder), SdA (Stacked Denoising Autoencoder), RBM (Restricted Boltzmann machine) and DBN (Deep Belief Nets)
-deepr	??*	Package to streamline the training, fine-tuning and predicting processes for deep learning based on darch and deepnet
-MXNetR	??*	Package that brings flexible and efficient GPU computing and state-of-art deep learning to R
+.fill-space {
+    flex: 1 1 auto;
+}
+
+.icon {
+    width: 16px;
+    height: 16px;
+}
+
+.header-word {
+    padding-top: 4px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.separator {
+    padding-top: 4px;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+hr {
+  margin-top: 0;
+  margin-bottom: 0;
+  border-top: 1px solid rgb(0,0,0);
+}
+
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#"><strong>EMBEDDED</strong>GESTOR</a>
+  <span class="fill-space"></span>
+  <img class="icon" src="../assets/open-iconic-master/svg/person.svg">
+  <span class="header-word">Nome do usuário</span>
+  <span class="separator"> | </span>
+  <a href="#"><img class="icon" src="../assets/open-iconic-master/svg/x.svg"></a>
+  <span class="header-word">Sair</span>
+</nav>
+<hr>
+
+
+.col-sm-3 {
+
+}
+
+p {
+  text-align: center;
+  padding-bottom: 0.9rem;
+  padding-top: 0.9rem;
+  margin-bottom: 0;
+}
+
+.outset {
+  border-bottom-style: outset;
+  border-bottom-color: rgb(0,0,0);
+}
+
+hr {
+  margin-top: 0;
+  margin-bottom: 0;
+  border-top: 1px solid rgb(0,0,0);
+}
+
+
+
+<div class="row">
+  <div class="col-sm-2 offset-sm-2" (click)="selected = 'Gestores'" routerLink="/gestores">
+    <p [class.outset]="selected == 'Gestores'">
+      Gestores
+    </p>
+  </div>
+  <div class="col-sm-2" (click)="selected = 'Coaches'" routerLink="/coaches">
+    <p [class.outset]="selected == 'Coaches'">
+      Coaches
+    </p>
+  </div>
+</div>
+<hr>

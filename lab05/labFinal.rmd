@@ -170,10 +170,125 @@ iris.trainingtarget <- iris[ind==1, 5]
 iris.testtarget <- iris[ind==2, 5]
 ```
 
+Como último passo, devemos transformar os dados em uma matriz com um valor booleano para cada classe de valor e se essa classe possuem um valor. Para isso o pacote `keras` também nos ajuda:
+```{r}
+# Variável alvo de treino
+iris.trainLabels <- to_categorical(iris.trainingtarget)
+
+# Variável alvo de teste
+iris.testLabels <- to_categorical(iris.testtarget)
+
+print(iris.testLabels)
+```
+
+Agora podemos começar a construir o modelo!
+
 ### **Construindo o modelo**
+Primeiramente precisamos de um modelo sequencial que pode ser gerado pelo `keras` com `keras_model_sequential()`. Antes disso, devemos notar que trabalhar com dados númericos é mais fácil, porém já realizamos o processamento para obter uma variável alvo binária indicando qual o tipo da flor. Uma rede que possui bom desemepenho para esse tipo de problema é a multi-layer (várias camadas) perceptron. É um tipo de rede que é geralmente completamente conectada. Para isso utilizaremos a função de ativação 'relu' e 'softmax' para garantir que os valores de predição estejam entre 1 e 0.
+```{r}
+# Modelo sequencial
+model <- keras_model_sequential() 
+
+# Adicionando camadas ao modelo.
+model %>% 
+    layer_dense(units = 8, activation = 'relu', input_shape = c(4)) %>% 
+    layer_dense(units = 3, activation = 'softmax')
+```
+
+Abaixo algumas funções para você analisar o seu modelo de forma mais profunda:
+```{r}
+# Resumo do modelo
+summary(model)
+
+# Configuração do modelo
+get_config(model)
+
+# Configuração das camadas
+get_layer(model, index = 1)
+
+# Lista as camadas do modelo
+model$layers
+
+# Lista os tensors de entrada
+model$inputs
+
+# Lista os tensors de saída
+model$outputs
+```
+
 ### **Compilando e ajustando o modelo**
+Para compilar nosso modelo, precisamos configurar o modelo com o otimizador `adam` e a função de perda `categorical_crossentropy`. Também adicionaremos a métrica `accuracy` para monitorar o modelo.
+```{r}
+# Compilando o modelo
+model %>% compile(
+     loss = 'categorical_crossentropy',
+     optimizer = 'adam',
+     metrics = 'accuracy'
+ )
+```
+Agora vamos ajustar o modelo (fit) para 200 iterações com conjuntos de 5 amostras.
+```{r}
+# Ajuste o modelo
+model %>% fit(
+     iris.training, 
+     iris.trainLabels, 
+     epochs = 200, 
+     batch_size = 5, 
+     validation_split = 0.2
+ )
+```
+
 ### **Visualizando o histórico do modelo**
+É uma boa ideia visualizar o histórico de ajuste do modelo, para melhor analisar as mudanças.
+```{r}
+# Store the fitting history in `history` 
+history <- model %>% fit(
+     iris.training, 
+     iris.trainLabels, 
+     epochs = 200,
+     batch_size = 5, 
+     validation_split = 0.2
+ )
+
+# Plot the history
+plot(history)
+```
+
+Os gráficos gerados podem ser dificeis de analisar. Para facilitar um pouco, vamos *plotar* gráficos para os dados de treino e de teste. Primeiro o gráfico para a perda.
+```{r}
+# Plot the model loss of the training data
+plot(history$metrics$loss, main="Model Loss", xlab = "epoch", ylab="loss", col="blue", type="l")
+
+# Plot the model loss of the test data
+lines(history$metrics$val_loss, col="green")
+
+# Add legend
+legend("topright", c("train","test"), col=c("blue", "green"), lty=c(1,1))
+```
+Agora para a taxa de acerto.
+```{r}
+# Plot the accuracy of the training data 
+plot(history$metrics$acc, main="Model Accuracy", xlab = "epoch", ylab="accuracy", col="blue", type="l")
+
+# Plot the accuracy of the validation data
+lines(history$metrics$val_acc, col="green")
+
+# Add Legend
+legend("bottomright", c("train","test"), col=c("blue", "green"), lty=c(1,1))
+```
+* Se sua taxa de acerto de treino aumenta enquanto a taxa de acerto do teste diminui, isso indica que está acontecendo um *overfitting* e que seu modelo está apenas memorizando os dados de treino.
+* Se ambas taxa de acerto estão crescendo nas última iterações, indica que o modelo ainda poderia sofrer mais iterações antes de poder sofrer de *overfitting*.
+
 ### **Predizendo valores**
+Agora que o modelo já foi treinado, é hora de predizer valores a partir dos dados de teste. Para isso podemos utilizar a função `predict()`. Depois disso podemos usar a função `table()` para fazer uma matriz de confursão dos valores de predição e os dados de teste.
+```{r}
+# Predict the classes for the test data
+classes <- model %>% predict_classes(iris.test, batch_size = 128)
+
+# Confusion matrix
+table(iris.testtarget, classes)
+```
+
 ### **Avaliando o modelo**
 ### **Tuning do modelo**
 ### **Salvando, carregando e exportando o modelo**
